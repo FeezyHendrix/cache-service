@@ -4,7 +4,6 @@ services:
   cache-server:
     build: .
     ports:
-      - "${TCP_PORT:-6379}:${TCP_PORT:-6379}"  # TCP cache protocol
       - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"  # HTTP REST API
     env_file:
       - .env

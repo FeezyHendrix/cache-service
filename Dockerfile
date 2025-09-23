@@ -40,8 +40,8 @@ RUN chown -R cache:cache /app
 # Switch to non-root user
 USER cache
 
-# Expose ports
-EXPOSE 6379 8080
+# Expose port
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

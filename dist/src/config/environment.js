@@ -58,10 +58,6 @@ exports.config = {
         cleanupInterval: getEnvAsNumber('CLEANUP_INTERVAL', 30000),
     },
     server: {
-        tcp: {
-            port: getEnvAsNumber('TCP_PORT', 6379),
-            host: getEnvAsString('TCP_HOST', '0.0.0.0'),
-        },
         http: {
             port: getEnvAsNumber('HTTP_PORT', 8080),
             host: getEnvAsString('HTTP_HOST', '0.0.0.0'),

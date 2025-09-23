@@ -1,6 +1,6 @@
 # Zencastr Cache Service
 
-A high-performance, production-ready caching service built in TypeScript, similar to Redis or Memcached. Features LRU eviction, TTL support, TCP/HTTP protocols, and comprehensive monitoring.
+A high-performance, production-ready caching service built in TypeScript, similar to Redis or Memcached. Features LRU eviction, TTL support, HTTP REST API, and comprehensive monitoring.
 
 ## Architecture Overview
 
@@ -8,7 +8,7 @@ A high-performance, production-ready caching service built in TypeScript, simila
 
 - **LRU Cache**: O(1) operations using hash map + doubly linked list
 - **TTL Support**: Automatic expiration with background cleanup
-- **Dual Protocol**: TCP (binary) and HTTP (REST API) servers
+- **HTTP REST API**: Clean, standard REST interface
 - **Modular Design**: Separate concerns for maintainability
 - **Production Ready**: Metrics, health checks, graceful shutdown
 
@@ -33,7 +33,6 @@ docker-compose up -d
 ```
 
 The service will be available at:
-- TCP Server: `localhost:6379`
 - HTTP API: `localhost:8080`
 - Health Check: `http://localhost:8080/health`
 
@@ -58,7 +57,7 @@ npm run dev
 
 ## Usage Examples
 
-### CLI (HTTP-based)
+### CLI
 
 ```bash
 # Start interactive CLI
@@ -119,9 +118,9 @@ curl -X POST http://localhost:8080/cache/bulk \
 ### Node.js Client
 
 ```typescript
-import { TCPClient } from './src/client/tcp-client';
+import { HTTPClient } from './src/client/http-client';
 
-const client = new TCPClient();
+const client = new HTTPClient();
 await client.connect();
 
 // Basic operations
@@ -152,14 +151,13 @@ const cacheService = new CacheService({
 });
 ```
 
-### Server Ports
+### Server Port
 
-- TCP Server: `6379` (Redis-compatible port)
 - HTTP Server: `8080`
 
 ## API Reference
 
-### TCP Protocol Commands
+### CLI Commands
 
 | Command | Description | Example |
 |---------|-------------|---------|
@@ -343,7 +341,6 @@ this.cleanupInterval = setInterval(() => {
 - **Predictable Behavior**: Deterministic eviction order based on access patterns
 
 ### Protocol Design
-- **Binary Protocol**: Length-prefixed JSON for TCP
 - **HTTP Protocol**: Standard REST API with JSON
 - **Error Handling**: Comprehensive error responses
 
@@ -355,13 +352,12 @@ src/
 ├── core/           # Cache implementation
 │   ├── lru-cache.ts
 │   └── cache-service.ts
-├── server/         # Network servers
-│   ├── tcp-server.ts
+├── server/         # Network server
 │   ├── http-server.ts
 │   └── index.ts
 ├── client/         # Client implementations
-│   ├── tcp-client.ts
-│   └── cli.ts
+│   ├── http-client.ts   # HTTP client
+│   └── cli.ts           # Interactive CLI
 ├── types/          # TypeScript definitions
 │   └── cache.ts
 └── utils/          # Utilities

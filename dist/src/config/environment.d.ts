@@ -8,10 +8,6 @@ export interface EnvironmentConfig {
         cleanupInterval: number;
     };
     server: {
-        tcp: {
-            port: number;
-            host: string;
-        };
         http: {
             port: number;
             host: string;

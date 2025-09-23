@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const cache_service_1 = require("../core/cache-service");
-const tcp_server_1 = require("./tcp-server");
 const http_server_1 = require("./http-server");
 const environment_1 = require("../config/environment");
 class CacheServer {
@@ -15,17 +14,12 @@ class CacheServer {
             maxKeySize: environment_1.config.cache.maxKeySize,
             maxValueSize: environment_1.config.cache.maxValueSize
         });
-        this.tcpServer = new tcp_server_1.TCPServer(this.cacheService, environment_1.config.server.tcp.port, environment_1.config.server.tcp.host);
         this.httpServer = new http_server_1.HTTPServer(this.cacheService, environment_1.config.server.http.port);
     }
     async start() {
         try {
-            await Promise.all([
-                this.tcpServer.start(),
-                this.httpServer.start()
-            ]);
+            await this.httpServer.start();
             console.log('Cache Server started successfully');
-            console.log(`TCP Server: ${environment_1.config.server.tcp.host}:${environment_1.config.server.tcp.port}`);
             console.log(`HTTP Server: ${environment_1.config.server.http.host}:${environment_1.config.server.http.port}`);
             console.log(`Health check: http://${environment_1.config.server.http.host}:${environment_1.config.server.http.port}${environment_1.config.monitoring.healthEndpoint}`);
             console.log(`Cache stats: http://${environment_1.config.server.http.host}:${environment_1.config.server.http.port}${environment_1.config.monitoring.metricsEndpoint}`);
@@ -37,10 +31,7 @@ class CacheServer {
     }
     async stop() {
         try {
-            await Promise.all([
-                this.tcpServer.stop(),
-                this.httpServer.stop()
-            ]);
+            await this.httpServer.stop();
             this.cacheService.shutdown();
             console.log('Cache Server stopped gracefully');
         }

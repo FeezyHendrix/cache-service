@@ -16,10 +16,6 @@ export interface EnvironmentConfig {
   
   // Server Configuration
   server: {
-    tcp: {
-      port: number;
-      host: string;
-    };
     http: {
       port: number;
       host: string;
@@ -77,10 +73,6 @@ export const config: EnvironmentConfig = {
   },
   
   server: {
-    tcp: {
-      port: getEnvAsNumber('TCP_PORT', 6379),
-      host: getEnvAsString('TCP_HOST', '0.0.0.0'),
-    },
     http: {
       port: getEnvAsNumber('HTTP_PORT', 8080),
       host: getEnvAsString('HTTP_HOST', '0.0.0.0'),

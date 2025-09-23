@@ -1,11 +1,9 @@
 import { CacheService } from '../core/cache-service';
-import { TCPServer } from './tcp-server';
 import { HTTPServer } from './http-server';
 import { config } from '../config/environment';
 
 class CacheServer {
   private cacheService: CacheService;
-  private tcpServer: TCPServer;
   private httpServer: HTTPServer;
 
   constructor() {
@@ -19,19 +17,14 @@ class CacheServer {
       maxValueSize: config.cache.maxValueSize
     });
 
-    this.tcpServer = new TCPServer(this.cacheService, config.server.tcp.port, config.server.tcp.host);
     this.httpServer = new HTTPServer(this.cacheService, config.server.http.port);
   }
 
   async start(): Promise<void> {
     try {
-      await Promise.all([
-        this.tcpServer.start(),
-        this.httpServer.start()
-      ]);
+      await this.httpServer.start();
 
       console.log('Cache Server started successfully');
-      console.log(`TCP Server: ${config.server.tcp.host}:${config.server.tcp.port}`);
       console.log(`HTTP Server: ${config.server.http.host}:${config.server.http.port}`);
       console.log(`Health check: http://${config.server.http.host}:${config.server.http.port}${config.monitoring.healthEndpoint}`);
       console.log(`Cache stats: http://${config.server.http.host}:${config.server.http.port}${config.monitoring.metricsEndpoint}`);
@@ -43,10 +36,7 @@ class CacheServer {
 
   async stop(): Promise<void> {
     try {
-      await Promise.all([
-        this.tcpServer.stop(),
-        this.httpServer.stop()
-      ]);
+      await this.httpServer.stop();
       
       this.cacheService.shutdown();
       console.log('Cache Server stopped gracefully');
