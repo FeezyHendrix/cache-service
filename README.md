@@ -58,7 +58,7 @@ npm run dev
 
 ## Usage Examples
 
-### TCP Client (CLI)
+### CLI (HTTP-based)
 
 ```bash
 # Start interactive CLI
@@ -182,27 +182,6 @@ const cacheService = new CacheService({
 | `GET` | `/cache/bulk?keys=k1,k2` | Bulk get |
 | `POST` | `/cache/bulk` | Bulk set |
 
-## Performance Characteristics
-
-### Time Complexity
-- **Get**: O(1)
-- **Set**: O(1)
-- **Delete**: O(1)
-- **Eviction**: O(1)
-
-### Benchmarks
-On a typical development machine:
-- **SET**: ~50,000 ops/sec
-- **GET**: ~60,000 ops/sec
-- **Memory**: ~1MB for 10,000 string entries
-
-### Production Considerations
-
-1. **Memory Management**: Automatic LRU eviction prevents OOM
-2. **TTL Cleanup**: Background process removes expired entries
-3. **Connection Limits**: Configure OS limits for high concurrency
-4. **Monitoring**: Built-in metrics for observability
-5. **Graceful Shutdown**: Handles SIGINT/SIGTERM properly
 
 ## Testing
 
@@ -271,9 +250,97 @@ Cache Node: {
 ```
 
 ### Eviction Strategy
-1. Check TTL on access
-2. LRU eviction when at capacity
-3. Background cleanup every 30 seconds
+
+The cache implements a sophisticated multi-layered eviction strategy that combines TTL-based expiration with LRU (Least Recently Used) eviction for optimal memory management:
+
+#### 1. TTL-Based Expiration
+- **On-Access Validation**: Every GET operation checks if the entry has expired before returning data
+- **Automatic Cleanup**: Expired entries are immediately removed when accessed
+- **Flexible TTL**: Supports per-key TTL overrides or falls back to default TTL
+- **Background Cleanup**: Periodic cleanup process runs every 30 seconds to remove expired entries proactively
+
+```typescript
+// TTL validation on every access - src/core/lru-cache.ts:53-57
+if (this.isExpired(node)) {
+  this.delete(key);
+  this.updateMetrics('miss');
+  return null;
+}
+```
+
+#### 2. LRU Eviction Mechanism
+- **Capacity Management**: When cache reaches `maxSize`, least recently used items are evicted
+- **O(1) Performance**: Uses hash map + doubly linked list for constant-time operations
+- **Access Tracking**: Each access moves the item to the front of the list (most recently used)
+- **Smart Ordering**: Items naturally migrate to the tail as they become less frequently accessed
+
+```typescript
+// Capacity check and LRU eviction - src/core/lru-cache.ts:108-110
+if (this.size >= this.maxSize && this.maxSize > 0) {
+  this.evictLRU();
+}
+```
+
+```typescript
+// Move accessed items to front - src/core/lru-cache.ts:60-62
+this.moveToFront(node);
+node.accessCount++;
+this.updateMetrics('hit');
+```
+
+#### 3. Eviction Process Flow
+```
+1. New item insertion when at capacity:
+   └── Identify LRU item (tail of linked list)
+   └── Remove from hash map and linked list
+   └── Insert new item at head
+   └── Update metrics (evictions counter)
+
+2. Item access (GET operation):
+   └── Check TTL expiration first
+   └── If expired: remove immediately
+   └── If valid: move to front (head) of list
+   └── Increment access counter
+```
+
+```typescript
+// LRU eviction implementation - src/core/lru-cache.ts:233-241
+private evictLRU(): void {
+  if (!this.tail) return;
+  
+  const keyToEvict = this.tail.key;
+  this.cache.delete(keyToEvict);
+  this.removeFromList(this.tail);
+  this.size--;
+  this.updateMetrics('eviction');
+}
+```
+
+#### 4. Memory Safety Features
+- **Graceful Degradation**: Zero-capacity mode accepts operations but doesn't store data
+- **Size Validation**: Enforces maximum key (256 bytes) and value (1MB) sizes
+- **Prototype Pollution Protection**: Blocks dangerous object keys (`__proto__`, `constructor`)
+- **Input Sanitization**: Prevents null bytes and control characters in keys
+
+```typescript
+// Prototype pollution protection - src/core/lru-cache.ts:286-289
+if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+  return false;
+}
+```
+
+```typescript
+// Background cleanup process - src/core/cache-service.ts:161-163
+this.cleanupInterval = setInterval(() => {
+  this.cache.cleanup();
+}, 30000);
+```
+
+#### 5. Performance Characteristics
+- **Eviction Speed**: O(1) - constant time regardless of cache size
+- **Memory Efficiency**: Automatic cleanup prevents memory leaks
+- **Access Pattern Optimization**: Frequently accessed items stay in cache longer
+- **Predictable Behavior**: Deterministic eviction order based on access patterns
 
 ### Protocol Design
 - **Binary Protocol**: Length-prefixed JSON for TCP

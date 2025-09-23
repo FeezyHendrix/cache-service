@@ -8,8 +8,6 @@ services:
       - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"  # HTTP REST API
     env_file:
       - .env
-    environment:
-      - NODE_ENV=production
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${HTTP_PORT:-8080}${HEALTH_ENDPOINT:-/health}"]

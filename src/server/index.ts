@@ -19,7 +19,7 @@ class CacheServer {
       maxValueSize: config.cache.maxValueSize
     });
 
-    this.tcpServer = new TCPServer(this.cacheService, config.server.tcp.port);
+    this.tcpServer = new TCPServer(this.cacheService, config.server.tcp.port, config.server.tcp.host);
     this.httpServer = new HTTPServer(this.cacheService, config.server.http.port);
   }
 

@@ -79,11 +79,11 @@ export const config: EnvironmentConfig = {
   server: {
     tcp: {
       port: getEnvAsNumber('TCP_PORT', 6379),
-      host: getEnvAsString('TCP_HOST', 'localhost'),
+      host: getEnvAsString('TCP_HOST', '0.0.0.0'),
     },
     http: {
       port: getEnvAsNumber('HTTP_PORT', 8080),
-      host: getEnvAsString('HTTP_HOST', 'localhost'),
+      host: getEnvAsString('HTTP_HOST', '0.0.0.0'),
     },
     maxConnections: getEnvAsNumber('MAX_CONNECTIONS', 1000),
     requestTimeout: getEnvAsNumber('REQUEST_TIMEOUT', 5000),

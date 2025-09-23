@@ -7,11 +7,13 @@ export class TCPServer {
   private server: net.Server;
   private cacheService: CacheService;
   private port: number;
+  private host: string;
   private connections: Set<net.Socket>;
 
-  constructor(cacheService: CacheService, port: number = 6379) {
+  constructor(cacheService: CacheService, port: number = 6379, host: string = '0.0.0.0') {
     this.cacheService = cacheService;
     this.port = port;
+    this.host = host;
     this.connections = new Set();
     this.server = net.createServer();
     this.setupServer();
@@ -19,22 +21,33 @@ export class TCPServer {
 
   private setupServer(): void {
     this.server.on('connection', (socket) => {
-      console.log(`Client connected: ${socket.remoteAddress}:${socket.remotePort}`);
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`Client connected: ${socket.remoteAddress}:${socket.remotePort}`);
+      }
       this.connections.add(socket);
       
       let buffer = Buffer.alloc(0);
 
       socket.on('data', async (data) => {
         try {
+          if (process.env.NODE_ENV !== 'test') {
+            console.log('Received data:', data.length, 'bytes');
+          }
           buffer = Buffer.concat([buffer, data]);
           
           // Process complete messages
           while (buffer.length >= 4) {
             try {
               const { data: operation, bytesRead } = Protocol.deserialize(buffer);
+              if (process.env.NODE_ENV !== 'test') {
+                console.log('Parsed operation:', JSON.stringify(operation));
+              }
               buffer = buffer.slice(bytesRead);
               
               const response = await this.handleOperation(operation);
+              if (process.env.NODE_ENV !== 'test') {
+                console.log('Sending response:', JSON.stringify(response));
+              }
               const responseBuffer = Protocol.serialize(response);
               socket.write(responseBuffer);
             } catch (error) {
@@ -103,8 +116,8 @@ export class TCPServer {
 
   start(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.server.listen(this.port, () => {
-        console.log(`TCP Cache Server listening on port ${this.port}`);
+      this.server.listen(this.port, this.host, () => {
+        console.log(`TCP Cache Server listening on ${this.host}:${this.port}`);
         resolve();
       });
 

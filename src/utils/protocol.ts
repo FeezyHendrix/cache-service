@@ -35,7 +35,7 @@ export class Protocol {
   }
 
   static parseCommand(input: string): CacheOperation {
-    const parts = input.trim().split(/\s+/).filter(p => p.length > 0);
+    const parts = this.parseCommandParts(input.trim());
     const command = parts[0].toUpperCase();
 
     switch (command) {
@@ -67,6 +67,38 @@ export class Protocol {
       default:
         throw new Error(`Unknown command: ${command}`);
     }
+  }
+
+  private static parseCommandParts(input: string): string[] {
+    const parts: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i];
+      
+      if (!inQuotes && (char === '"' || char === "'")) {
+        inQuotes = true;
+        quoteChar = char;
+      } else if (inQuotes && char === quoteChar) {
+        inQuotes = false;
+        quoteChar = '';
+      } else if (!inQuotes && /\s/.test(char)) {
+        if (current.length > 0) {
+          parts.push(current);
+          current = '';
+        }
+      } else {
+        current += char;
+      }
+    }
+    
+    if (current.length > 0) {
+      parts.push(current);
+    }
+    
+    return parts;
   }
 
   static formatResponse(response: CacheResponse): string {

@@ -7,12 +7,16 @@ export class TCPClient {
   private host: string;
   private port: number;
   private connected: boolean;
+  private pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }>;
+  private requestId: number;
 
   constructor(host: string = 'localhost', port: number = 6379) {
     this.socket = null;
     this.host = host;
     this.port = port;
     this.connected = false;
+    this.pendingRequests = new Map();
+    this.requestId = 0;
   }
 
   async connect(): Promise<void> {
@@ -70,11 +74,11 @@ export class TCPClient {
       this.socket!.on('data', onData);
       this.socket!.write(requestBuffer);
       
-      // Timeout after 5 seconds
+      // Timeout after 10 seconds
       setTimeout(() => {
         this.socket!.removeListener('data', onData);
         reject(new Error('Request timeout'));
-      }, 5000);
+      }, 10000);
     });
   }
 

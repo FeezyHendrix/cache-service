@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 import * as readline from 'readline';
-import { TCPClient } from './tcp-client';
+import { HTTPClient } from './http-client';
 import { Protocol } from '../utils/protocol';
 
 class CacheCLI {
-  private client: TCPClient;
+  private client: HTTPClient;
   private rl: readline.Interface;
 
   constructor() {
-    this.client = new TCPClient();
+    this.client = new HTTPClient();
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -58,7 +58,29 @@ class CacheCLI {
       }
 
       const operation = Protocol.parseCommand(input);
-      const response = await this.client.sendOperation(operation);
+      let result;
+      
+      switch (operation.type) {
+        case 'GET':
+          result = await this.client.get(operation.key!);
+          break;
+        case 'SET':
+          result = await this.client.set(operation.key!, operation.value, operation.ttl);
+          break;
+        case 'DELETE':
+          result = await this.client.delete(operation.key!);
+          break;
+        case 'CLEAR':
+          result = await this.client.clear();
+          break;
+        case 'STATS':
+          result = await this.client.getStats();
+          break;
+        default:
+          throw new Error(`Unknown operation: ${operation.type}`);
+      }
+      
+      const response = { success: true, data: result };
       const formatted = Protocol.formatResponse(response);
       console.log(formatted);
 
@@ -92,13 +114,13 @@ Examples:
 
 // Performance test function
 async function performanceTest(): Promise<void> {
-  const client = new TCPClient();
+  const client = new HTTPClient();
   
   try {
     await client.connect();
     console.log('Running performance test...');
     
-    const iterations = 10000;
+    const iterations = 1000; // Reduced for HTTP to avoid overwhelming
     const start = Date.now();
     
     // Set operations
